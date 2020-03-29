@@ -1,5 +1,6 @@
 #calendar {
     width: 100%;
+    min-height: 400px;
 }
 
 .calendar {
@@ -240,10 +241,6 @@ ul.events li {
 
 ul.events li span {
     margin-left: 5px;
-}
-
-ul.events li:before {
-    content: "*"
 }
 
 /*scrollbar*/

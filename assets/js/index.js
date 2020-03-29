@@ -1,13 +1,15 @@
 let userInfo = JSON.parse(window.localStorage.getItem("USER_OBJ") || "null");
-window.addEventListener("load", () => {
-    console.log(userInfo)
+
+document.addEventListener('DOMContentLoaded',function(){
+    console.log(userInfo);
     if (!userInfo) {
         location.href = "./login.html";
-        return;
+        return false;
     }
-    let nameNode = document.getElementById("user-name");
-    nameNode.innerText = userInfo.name;
-
+});
+$(document).ready(function(){
+    $('#u-user').html(`<img src="./assets/img${userInfo.avatar}.jpg" alt="头像" class="u-avatar img-circle">
+                        <span>${userInfo.name}</span>`);
     getCalendarData();
 });
 
