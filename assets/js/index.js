@@ -1,23 +1,70 @@
-function postData(url) {
-    // Default options are marked with *
-    return fetch("https://api2.bmob.cn/1/classes/"+url, {
-        cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-        credentials: 'same-origin', // include, same-origin, *omit
-        headers: {
-            'X-Bmob-Application-Id': '089df87a586aac761a2feb9dbfbb0d7d',
-            'X-Bmob-REST-API-Key': '5fcfb2bff65fa11220ba356839008e21',
-            'Content-Type': 'application/json;charset=UTF-8',
-        },
-        method: 'GET', // *GET, POST, PUT, DELETE, etc.
-        mode: 'cors', // no-cors, cors, *same-origin
-        redirect: 'follow', // manual, *follow, error
-        referrer: 'no-referrer', // *client, no-referrer
+let userInfo = JSON.parse(window.localStorage.getItem("USER_OBJ") || "null");
+window.addEventListener("load", () => {
+    console.log(userInfo)
+    if (!userInfo) {
+        location.href = "./login.html";
+        return;
+    }
+    let nameNode = document.getElementById("user-name");
+    nameNode.innerText = userInfo.name;
+
+    getCalendarData();
+});
+
+function handleClick(e) {
+    let dom = document.getElementById("submit-btn");
+    dom.disabled = !e.target.checked;
+}
+function handleSubmit(e) {
+    let dom = document.getElementById("content");
+    let content = dom.value.trim() || '';
+    e.preventDefault();
+    e.target.disabled = true;
+
+    postData('sc_calendar_list', {
+        content,
+        userName: userInfo.name,
+        userId: userInfo.objectId,
+    }).then(data => {
+        console.log(data);
+        $('#m-form').html('<div class="alert alert-success" role="alert">打卡成功</div>');
+        getCalendarData();
+    }).catch(error => {
+        console.log(error)
+        e.target.disabled = false;
     })
-    .then(response => response.json()) // parses response to JSON
 }
 
-window.addEventListener("load", () => {
-    postData('sc_user_list')
-    .then(data => console.log(data)) // JSON from `response.json()` call
+function getCalendarData() {
+    const TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
+
+    getData('sc_calendar_list', {
+        where: {
+            $and: [
+                { 
+                    createdAt: { $gte: { __type: Date, iso: moment().startOf('month').format(TIME_FORMAT) } } 
+                }, { 
+                    createdAt: { $lte: { __type: Date, iso: moment().endOf('month').format(TIME_FORMAT) } } 
+                }
+            ],
+            userId: userInfo.objectId,
+        }
+    })
+    .then(data => {
+        $("#calendar").calendar({
+            mode: "month",
+            data: (data.results || []).map(item => ({ date: item.createdAt.split(' ')[0] })),
+            cellClick: function (events) {
+                console.log(events)
+                //viewCell的事件列表
+            },
+        });
+
+        // 今日已打卡
+        let findObj = (data.results || []).find(item => moment().isSame(item.createdAt.split(' ')[0], 'day'));
+        if (findObj) {
+            $('#m-form').html('<div class="alert alert-success" role="alert">今日已打卡，棒棒哒！</div>');
+        }
+    })
     .catch(error => console.error(error))
-})
+}
